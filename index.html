@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="fonts/icomoon/style.css" />
+  <link href="fullcalendar/packages/core/main.css" rel="stylesheet" />
+  <link href="fullcalendar/packages/daygrid/main.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <title>Calendario</title>
+  <style>
+    #previewImage {
+      max-width: 100%;
+      max-height: 80vh;
+      transition: transform 0.2s ease;
+      cursor: grab;
+    }
+  </style>
+</head>
+<body>
+
+<div class="content container mt-4">
+  <h2 class="mb-4">Calendario de Eventos</h2>
+  <div id="calendar"></div>
+</div>
+
+<!-- Modal para agregar evento -->
+<div class="modal fade" id="eventoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEvento" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo Evento</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="title">Título</label>
+            <input type="text" id="title" name="title" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="start">Fecha</label>
+            <input type="date" id="start" name="start" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea id="description" name="description" class="form-control"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="file">Archivo (PDF, Imagen, etc.)</label>
+            <input type="file" id="file" name="file" class="form-control-file" accept=".pdf,image/*" />
+          </div>
+          <div class="form-group">
+            <label for="backgroundColor">Color de fondo</label>
+            <input type="color" id="backgroundColor" name="backgroundColor" class="form-control" value="#3788d8" />
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para editar evento -->
+<div class="modal fade" id="editarEventoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditarEvento" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Evento</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit_id" name="id" />
+          <div class="form-group">
+            <label for="edit_title">Título</label>
+            <input type="text" id="edit_title" name="title" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="edit_start">Fecha</label>
+            <input type="date" id="edit_start" name="start" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="edit_description">Descripción</label>
+            <textarea id="edit_description" name="description" class="form-control"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Archivo actual</label>
+            <div id="fileInfo" class="d-flex align-items-center gap-2"></div>
+            <input type="file" id="edit_file" name="file" class="form-control-file mt-2" accept=".pdf,image/*" style="display: none;" />
+          </div>
+          <div class="form-group">
+            <label for="edit_backgroundColor">Color de fondo</label>
+            <input type="color" id="edit_backgroundColor" name="backgroundColor" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para previsualizar imagen -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-0">
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="previewImage" src="" alt="Vista previa" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay con spinner -->
+<div id="loadingOverlay" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    text-align: center;
+    padding-top: 20%;
+">
+    <div class="spinner-border text-primary" style="width: 5rem; height: 5rem;" role="status">
+        <span class="sr-only">Cargando...</span>
+    </div>
+    <p class="mt-3">Procesando...</p>
+</div>
+
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="fullcalendar/packages/core/main.js"></script>
+<script src="fullcalendar/packages/interaction/main.js"></script>
+<script src="fullcalendar/packages/daygrid/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
+
+<script>
+function mostrarLoading() { document.getElementById('loadingOverlay').style.display = 'block'; }
+function ocultarLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+document.addEventListener('DOMContentLoaded', function () {
+  const calendarEl = document.getElementById('calendar');
+
+  function formatDateForInput(date) {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    plugins: ['interaction', 'dayGrid'],
+    locale: 'es',
+    initialDate: new Date(),
+    editable: false,
+    selectable: true,
+    events: function(fetchInfo, successCallback, failureCallback) {
+      fetch(`https://contruccionra.unaux.com/calendario/eventos.php?action=read&start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`)
+        .then(res => res.json())
+        .then(data => successCallback(data))
+        .catch(err => failureCallback(err));
+    },
+    dateClick: function(info) {
+      document.getElementById('start').value = info.dateStr;
+      document.getElementById('formEvento').reset();
+      document.getElementById('file').style.display = 'block';
+      $('#eventoModal').modal('show');
+    },
+    eventClick: function(info) {
+      info.jsEvent.preventDefault();
+      const event = info.event;
+      document.getElementById('edit_id').value = event.id;
+      document.getElementById('edit_title').value = event.title;
+      document.getElementById('edit_start').value = formatDateForInput(event.start);
+      document.getElementById('edit_description').value = event.extendedProps.description || '';
+      document.getElementById('edit_backgroundColor').value = event.backgroundColor || '#3788d8';
+
+      const fileName = event.extendedProps.file || null;
+      const fileInfoEl = document.getElementById('fileInfo');
+      const editFileInput = document.getElementById('edit_file');
+
+      if (fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
+        fileInfoEl.innerHTML = `
+          <span>${fileName}</span>
+          ${['jpg','jpeg','png','gif','webp'].includes(extension)
+            ? `<a href="#" class="text-primary" onclick="verImagen('uploads/${fileName}');return false;"><i class="fas fa-search"></i></a>` : ''}
+          <a href="#" class="text-warning" id="editFileBtn"><i class="fas fa-pencil-alt"></i></a>
+        `;
+        editFileInput.style.display = 'none';
+        document.getElementById('editFileBtn').addEventListener('click', function(e){
+          e.preventDefault();
+          editFileInput.style.display = 'block';
+          editFileInput.scrollIntoView({ behavior: 'smooth' });
+        }, { once: true });
+      } else {
+        fileInfoEl.innerHTML = 'No hay archivo asociado.';
+        editFileInput.style.display = 'block';
+      }
+      editFileInput.value = '';
+      $('#editarEventoModal').modal('show');
+    }
+  });
+
+  calendar.render();
+
+  // Crear evento
+  document.getElementById('formEvento').addEventListener('submit', function(e) {
+    e.preventDefault();
+    mostrarLoading();
+    const formData = new FormData(this);
+    formData.append('allDay', 1);
+    formData.append('backgroundColor', document.getElementById('backgroundColor').value);
+
+    fetch('https://contruccionra.unaux.com/calendario/eventos.php?action=create', { method:'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        ocultarLoading();
+        if(data.status === 'success') { $('#eventoModal').modal('hide'); calendar.refetchEvents(); this.reset(); }
+        else alert('Error al guardar el evento.');
+      }).catch(()=>{ ocultarLoading(); alert('Error al conectar con el servidor.'); });
+  });
+
+  // Editar evento
+  document.getElementById('formEditarEvento').addEventListener('submit', function(e) {
+    e.preventDefault();
+    mostrarLoading();
+    const eventId = this.edit_id.value;
+    const formData = new FormData(this);
+    formData.append('allDay', 1);
+    formData.append('backgroundColor', document.getElementById('edit_backgroundColor').value);
+
+    fetch(`https://contruccionra.unaux.com/calendario/eventos.php?action=update&id=${eventId}`, { method:'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        ocultarLoading();
+        if(data.status === 'success') { $('#editarEventoModal').modal('hide'); calendar.refetchEvents(); }
+        else alert('Error al actualizar el evento.');
+      }).catch(()=>{ ocultarLoading(); alert('Error al conectar con el servidor.'); });
+  });
+});
+
+// Previsualizar imagen con zoom
+function verImagen(src) {
+  const img = document.getElementById('previewImage');
+  img.src = src;
+  img.style.transform = 'scale(1)';
+  $('#imagePreviewModal').modal('show');
+}
+
+document.getElementById('previewImage').addEventListener('wheel', function(e){
+  e.preventDefault();
+  let scale = parseFloat(this.style.transform.replace('scale(','').replace(')','')) || 1;
+  scale += e.deltaY * -0.001;
+  scale = Math.min(Math.max(0.5, scale), 3);
+  this.style.transform = `scale(${scale})`;
+});
+</script>
+
+</body>
+</html>
